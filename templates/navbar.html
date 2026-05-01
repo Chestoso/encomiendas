@@ -1,0 +1,20 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">Encomiendas</a>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-light" href="{% url 'dashboard' %}">Dashboard</a>
+            <a class="btn btn-outline-light" href="{% url 'encomienda_lista' %}">Lista</a>
+            <a class="btn btn-success" href="{% url 'encomienda_crear' %}">Nueva</a>
+            <a class="btn btn-warning" href="/admin/">Admin</a>
+
+            {% if user.is_authenticated %}
+                <span class="text-white align-self-center">Hola, {{ user.username }}</span>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="btn btn-danger">Salir</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</nav>

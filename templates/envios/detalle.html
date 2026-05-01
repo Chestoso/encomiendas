@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Encomienda{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-box me-2"></i>{{ encomienda.codigo }}</h2>
+
+    <a href="{% url 'encomienda_lista' %}" class="btn btn-outline-secondary">
+        Volver
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between">
+                <h5 class="mb-0">Información de la encomienda</h5>
+                <span class="badge-estado badge-{{ encomienda.estado }}">
+                    {{ encomienda.get_estado_display }}
+                </span>
+            </div>
+
+            <div class="card-body">
+                <p><strong>Remitente:</strong> {{ encomienda.remitente }}</p>
+                <p><strong>Destinatario:</strong> {{ encomienda.destinatario }}</p>
+                <p><strong>Ruta:</strong> {{ encomienda.ruta }}</p>
+                <p><strong>Peso:</strong> {{ encomienda.peso_kg }} kg</p>
+                <p><strong>Costo:</strong> S/ {{ encomienda.costo_envio }}</p>
+                <p><strong>Descripción:</strong> {{ encomienda.descripcion|default:'—' }}</p>
+                <p><strong>Observaciones:</strong> {{ encomienda.observaciones|default:'—' }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Historial de estados</h5>
+            </div>
+
+            <div class="card-body p-0">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Anterior</th>
+                            <th>Nuevo</th>
+                            <th>Observación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in historial %}
+                            <tr>
+                                <td>{{ h.estado_anterior }}</td>
+                                <td>{{ h.estado_nuevo }}</td>
+                                <td>{{ h.observacion|default:'—' }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-3">
+                                    Sin historial registrado.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Cambiar estado</h5>
+            </div>
+
+            <div class="card-body">
+                <form method="post" action="{% url 'encomienda_cambiar_estado' encomienda.pk %}">
+                    {% csrf_token %}
+
+                    <select name="estado" class="form-select mb-3" required>
+                        {% for valor, etiqueta in estados %}
+                            <option value="{{ valor }}" {% if encomienda.estado == valor %}selected{% endif %}>
+                                {{ etiqueta }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <textarea name="observacion" class="form-control mb-3" rows="3" placeholder="Observación"></textarea>
+
+                    <button type="submit" class="btn btn-warning w-100 btn-confirm" data-confirm="¿Deseas cambiar el estado?">
+                        Actualizar estado
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

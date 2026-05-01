@@ -1,0 +1,76 @@
+:root {
+    --estado-pendiente: #6c757d;
+    --estado-transito: #0dcaf0;
+    --estado-destino: #fd7e14;
+    --estado-entregado: #198754;
+    --estado-devuelto: #dc3545;
+    --estado-retraso: #dc3545;
+    --color-bg: #f8f9fa;
+}
+
+body {
+    background-color: var(--color-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    font-size: .85rem;
+    text-transform: uppercase;
+}
+
+.badge-estado {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.badge-PE {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.badge-TR {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+.badge-DE {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.badge-EN {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.badge-DV,
+.badge-RE {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.alert {
+    animation: fadeAlert 5s ease forwards;
+}
+
+@keyframes fadeAlert {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}

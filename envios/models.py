@@ -13,6 +13,8 @@ from rutas.models import Ruta
 from .validators import validar_codigo_encomienda, validar_peso_positivo
 from .querysets import EncomiendaQuerySet
 
+from django.contrib.auth.models import User
+
 
 # ── Empleado ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +29,13 @@ class Empleado(models.Model):
         choices=EstadoGeneral.choices,
         default=EstadoGeneral.ACTIVO
     )
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
     fecha_ingreso = models.DateField()
 
     def __str__(self):
