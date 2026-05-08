@@ -37,6 +37,15 @@ INSTALLED_APPS = [
     'envios',
     'clientes',
     'rutas',
+    'api',
+
+    # Django REST Framework
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'django_filters',
+    'drf_spectacular',
+    'corsheaders',
 ]
 
 # ─────────────────────────────────────────────────────────────
@@ -159,3 +168,106 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 # 🔢 CLAVE PRIMARIA
 # ─────────────────────────────────────────────────────────────
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# config/settings.py  ← agrega esto al final del archivo
+
+# ─────────────────────────────────────────────────────────────
+# ⏱️ IMPORTS ADICIONALES
+# ─────────────────────────────────────────────────────────────
+from datetime import timedelta
+
+# ─────────────────────────────────────────────────────────────
+# 🔌 DJANGO REST FRAMEWORK
+# ─────────────────────────────────────────────────────────────
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 15,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '30/min',
+        'user': '200/min',
+        'empleado': '100/min',
+        'login': '5/min',
+    },
+
+    # ── Versionado por URL (/api/v1/, /api/v2/) ───────────────
+    # URLPathVersioning lee la versión del path: /api/{version}/
+    # DEFAULT_VERSION se usa si el cliente no especifica versión.
+    # ALLOWED_VERSIONS rechaza cualquier versión fuera de la lista.
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    'DEFAULT_VERSION': 'v1',
+    'ALLOWED_VERSIONS': ['v1', 'v2'],
+    'VERSION_PARAM': 'version',
+
+    # Formato de error estandarizado (ver api/exceptions.py)
+    'EXCEPTION_HANDLER': 'api.exceptions.custom_exception_handler',
+}
+
+# ─────────────────────────────────────────────────────────────
+# 🔐 SIMPLE JWT
+# ─────────────────────────────────────────────────────────────
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+}
+
+# ─────────────────────────────────────────────────────────────
+# 🌐 CORS
+# ─────────────────────────────────────────────────────────────
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:8001',
+    'http://127.0.0.1:8001',
+]
+
+# ─────────────────────────────────────────────────────────────
+# 📄 DRF SPECTACULAR (OpenAPI / Swagger)
+# ─────────────────────────────────────────────────────────────
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'API Sistema de Gestión de Encomiendas',
+    'DESCRIPTION': 'API REST para gestionar clientes, rutas, encomiendas, estados e historial.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SORT_OPERATIONS': False,
+    'TAGS': [
+        {'name': 'Auth',        'description': 'Autenticación JWT'},
+        {'name': 'Encomiendas', 'description': 'Gestión de encomiendas'},
+        {'name': 'Clientes',    'description': 'Listado de clientes activos'},
+        {'name': 'Rutas',       'description': 'Listado de rutas activas'},
+    ],
+}
+
+# ─────────────────────────────────────────────────────────────
+# ⚡ CACHÉ (REDIS)
+# ─────────────────────────────────────────────────────────────
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://redis:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+    }
+}
