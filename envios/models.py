@@ -14,6 +14,8 @@ from .validators import validar_codigo_encomienda, validar_peso_positivo
 from .querysets import EncomiendaQuerySet
 
 from django.contrib.auth.models import User
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 # ── Empleado ──────────────────────────────────────────────────────────────────
@@ -35,7 +37,6 @@ class Empleado(models.Model):
         null=True,
         blank=True
     )
-
     fecha_ingreso = models.DateField()
 
     def __str__(self):
@@ -195,6 +196,7 @@ class Encomienda(models.Model):
     def cambiar_estado(self, nuevo_estado, empleado, observacion=''):
         """
         Cambia el estado y registra el cambio en HistorialEstado.
+        Al finalizar notifica via WebSocket a los 3 grupos.
         Uso: enc.cambiar_estado(EstadoEnvio.EN_TRANSITO, empleado=e1)
         """
         if nuevo_estado == self.estado:
@@ -209,7 +211,7 @@ class Encomienda(models.Model):
         if nuevo_estado == EstadoEnvio.ENTREGADO:
             self.fecha_entrega_real = timezone.now().date()
 
-        # Usamos update() para evitar que save() relanzce validaciones
+        # Usamos update() para evitar que save() relance validaciones
         # de fecha_entrega_real < fecha_entrega_est al marcar como entregado
         Encomienda.objects.filter(pk=self.pk).update(
             estado=self.estado,
@@ -224,7 +226,59 @@ class Encomienda(models.Model):
             empleado=empleado,
             observacion=observacion
         )
+
+        # Punto 6: notificar al channel layer desde código síncrono
+        self._notificar_websocket(estado_anterior, nuevo_estado, empleado)
+
         return self
+
+    def _notificar_websocket(self, estado_anterior, estado_nuevo, empleado):
+        """
+        Punto 6: group_send desde el modelo con async_to_sync.
+        Punto 7: los tres grupos funcionan independientemente.
+
+        Grupos notificados:
+          - 'encomiendas_global'  → todos los empleados conectados
+          - 'encomienda_{pk}'     → quien ve el detalle de esta encomienda
+          - 'dashboard'           → quien tiene el dashboard abierto
+        """
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            # Sin channel layer configurado (tests unitarios sin Channels)
+            return
+
+        mensaje = {
+            'type':            'encomienda_estado_cambio',
+            'encomienda_id':   self.pk,
+            'codigo':          self.codigo,
+            'estado_anterior': estado_anterior,
+            'estado_nuevo':    estado_nuevo,
+            'empleado':        str(empleado),
+            'timestamp':       timezone.now().isoformat(),
+        }
+
+        # Grupo 1: canal global — todos los empleados
+        async_to_sync(channel_layer.group_send)('encomiendas_global', mensaje)
+
+        # Grupo 2: canal específico de esta encomienda
+        async_to_sync(channel_layer.group_send)(f'encomienda_{self.pk}', mensaje)
+
+        # Grupo 3: dashboard — actualizar estadísticas
+        stats = {
+            'total':        Encomienda.objects.count(),
+            'pendientes':   Encomienda.objects.pendientes().count(),
+            'activas':     Encomienda.objects.activas().count(),
+            'en_transito': Encomienda.objects.en_transito().count(),
+            'con_retraso': Encomienda.objects.con_retraso().count(),
+            'entregadas_hoy': Encomienda.objects.filter(
+                estado=EstadoEnvio.ENTREGADO,
+                fecha_entrega_real=timezone.now().date()
+            ).count(),
+        }
+        async_to_sync(channel_layer.group_send)(
+            'dashboard',
+            {'type': 'dashboard_actualizar', 'stats': stats}
+        )
 
     # ── Classmethod ───────────────────────────────────────────────────────────
     @classmethod

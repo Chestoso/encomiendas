@@ -1,73 +1,67 @@
 # api/pagination.py
-# ─────────────────────────────────────────────────────────────
-# 📄 PAGINACIÓN PERSONALIZADA POR RECURSO
-# Cada clase define una estrategia distinta según el volumen
-# y naturaleza de los datos que expone cada endpoint.
-# ─────────────────────────────────────────────────────────────
-
-from rest_framework.pagination import (
-    PageNumberPagination,   # paginación clásica por número de página
-    LimitOffsetPagination,  # paginación por offset (útil para scroll infinito)
-    CursorPagination,       # paginación por cursor (eficiente en tablas grandes)
-)
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 
 
-# ─────────────────────────────────────────────────────────────
-# 📦 ENCOMIENDAS — Paginación por número de página
-# Uso: GET /api/encomiendas/?page=2&page_size=30
-# ─────────────────────────────────────────────────────────────
 class EncomiendaPagination(PageNumberPagination):
-    # Registros por página por defecto
+    """
+    Paginación principal para el endpoint de encomiendas.
+
+    Respuesta:
+    {
+        "success": true,
+        "pagination": {
+            "count": 0,
+            "total_pages": 0,
+            "current_page": 1,
+            "next": null,
+            "previous": null
+        },
+        "results": []
+    }
+    """
     page_size = 15
-
-    # Permite al cliente ajustar el tamaño: ?page_size=50
     page_size_query_param = 'page_size'
-
-    # Límite máximo que el cliente puede solicitar
     max_page_size = 100
 
-    # Parámetro GET para cambiar de página: ?page=3
-    page_query_param = 'page'
+    def get_paginated_response(self, data):
+        return Response({
+            'success': True,
+            'pagination': {
+                'count': self.page.paginator.count,
+                'total_pages': self.page.paginator.num_pages,
+                'current_page': self.page.number,
+                'next': self.get_next_link(),
+                'previous': self.get_previous_link(),
+            },
+            'results': data,
+        })
+
+    def get_paginated_response_schema(self, schema):
+        return {
+            'type': 'object',
+            'properties': {
+                'success': {'type': 'boolean'},
+                'pagination': {
+                    'type': 'object',
+                    'properties': {
+                        'count': {'type': 'integer'},
+                        'total_pages': {'type': 'integer'},
+                        'current_page': {'type': 'integer'},
+                        'next': {'type': 'string', 'nullable': True},
+                        'previous': {'type': 'string', 'nullable': True},
+                    }
+                },
+                'results': schema,
+            }
+        }
 
 
-# ─────────────────────────────────────────────────────────────
-# 👤 CLIENTES — Paginación por número de página (más compacta)
-# Uso: GET /api/clientes/?page=1&page_size=20
-# ─────────────────────────────────────────────────────────────
-class ClientePagination(PageNumberPagination):
-    # Más registros por página ya que los datos de cliente son livianos
+class HistorialPagination(PageNumberPagination):
+    """
+    Paginación para el historial de estados de una encomienda.
+    Sin formato personalizado — usa el estándar de DRF.
+    """
     page_size = 20
-
-    # El cliente puede reducir el tamaño si lo necesita
     page_size_query_param = 'page_size'
-
-    # Tope bajo: evita devolver demasiados registros en una sola llamada
-    max_page_size = 50
-
-
-# ─────────────────────────────────────────────────────────────
-# 📜 HISTORIAL — Paginación por limit/offset
-# Más flexible para cargar bloques anteriores o saltar posiciones.
-# Uso: GET /api/historial/?limit=10&offset=20
-# ─────────────────────────────────────────────────────────────
-class HistorialPagination(LimitOffsetPagination):
-    # Cantidad de registros retornada si no se especifica limit
-    default_limit = 10
-
-    # El cliente no puede pedir más de 50 registros por llamada
-    max_limit = 50
-
-
-# ─────────────────────────────────────────────────────────────
-# ⚡ ENCOMIENDAS (CURSOR) — Paginación por cursor
-# Ideal para feeds en tiempo real o tablas con millones de filas.
-# No expone el total de páginas, pero es mucho más eficiente en BD.
-# Uso: GET /api/encomiendas/feed/?cursor=<token_opaco>
-# ─────────────────────────────────────────────────────────────
-class EncomiendaCursorPagination(CursorPagination):
-    # Registros por "ventana" de cursor
-    page_size = 15
-
-    # Ordena por fecha de registro descendente (más reciente primero)
-    # ⚠️ El campo debe estar indexado en la BD para buen rendimiento
-    ordering = '-fecha_registro'
+    max_page_size = 100

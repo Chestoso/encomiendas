@@ -30,4 +30,6 @@ urlpatterns = [
         views.encomienda_cambiar_estado,
         name='encomienda_cambiar_estado'
     ),
+
+    path('health/', views.health_check, name='health'),
 ]

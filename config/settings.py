@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from decouple import config
+import sys
 
 # ─────────────────────────────────────────────────────────────
 # 📁 RUTAS BASE DEL PROYECTO
@@ -26,6 +27,7 @@ ALLOWED_HOSTS = config(
 # 📦 APLICACIONES INSTALADAS
 # ─────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
+    'daphne',                          # ← PRIMERO, antes de staticfiles
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,6 +48,9 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     'corsheaders',
+
+    # Channels (va al final)
+    'channels',
 ]
 
 # ─────────────────────────────────────────────────────────────
@@ -135,7 +140,7 @@ USE_TZ = True
 # ─────────────────────────────────────────────────────────────
 
 # URL base
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # 👇 carpeta donde tú crearás css, js, imágenes
 STATICFILES_DIRS = [
@@ -271,3 +276,31 @@ CACHES = {
         },
     }
 }
+
+# ─────────────────────────────────────────────────────────────
+# ⚡ DJANGO CHANNELS
+# ─────────────────────────────────────────────────────────────
+
+ASGI_APPLICATION = 'config.asgi.application'
+
+REDIS_URL = 'redis://redis:6379/1'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URL],
+            'prefix': 'encomiendas',
+            'capacity': 100,
+            'expiry': 60,
+        },
+    }
+}
+
+# InMemoryChannelLayer solo para tests (sin Redis)
+if 'pytest' in sys.modules or 'test' in sys.argv:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }

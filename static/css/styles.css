@@ -69,6 +69,20 @@ main {
     animation: fadeAlert 5s ease forwards;
 }
 
+.dashboard-stat {
+    min-height: 96px;
+}
+
+.feed-icon {
+    width: 24px;
+    display: inline-flex;
+    justify-content: center;
+}
+
+#feed-lista .badge {
+    min-width: 82px;
+}
+
 @keyframes fadeAlert {
     0% { opacity: 1; }
     80% { opacity: 1; }

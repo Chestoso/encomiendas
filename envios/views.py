@@ -1,8 +1,8 @@
-# envios/views.py
+﻿# envios/views.py
 
-# ─────────────────────────────────────────────
-# 📦 IMPORTACIONES
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ðŸ“¦ IMPORTACIONES
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -10,19 +10,21 @@ from django.db.models import Q
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.http import JsonResponse
+from django.conf import settings
 
 from .forms import EncomiendaForm
 from .models import Encomienda, HistorialEstado, Empleado
 
 
-# ─────────────────────────────────────────────
-# 🏠 DASHBOARD PRINCIPAL
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ðŸ  DASHBOARD PRINCIPAL
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @login_required
 def dashboard(request):
     """
     Vista principal del sistema.
-    Muestra estadísticas generales de encomiendas.
+    Muestra estadÃ­sticas generales de encomiendas.
     Solo accesible para usuarios autenticados.
     """
 
@@ -43,11 +45,11 @@ def dashboard(request):
 
     context = {
         'stats': [
-            ('Total', total_encomiendas, 'primary', 'boxes'),
-            ('Pendientes', pendientes, 'secondary', 'clock'),
-            ('En tránsito', en_transito, 'info', 'truck'),
-            ('Con retraso', con_retraso, 'danger', 'exclamation-triangle'),
-            ('Entregadas', entregadas, 'success', 'check-circle'),
+            ('total', 'Total', total_encomiendas, 'primary', 'boxes-stacked'),
+            ('pendientes', 'Pendientes', pendientes, 'secondary', 'clock'),
+            ('en_transito', 'En transito', en_transito, 'info', 'truck-fast'),
+            ('con_retraso', 'Con retraso', con_retraso, 'danger', 'triangle-exclamation'),
+            ('entregadas_hoy', 'Entregadas', entregadas, 'success', 'circle-check'),
         ],
         'ultimas': ultimas,
     }
@@ -55,16 +57,16 @@ def dashboard(request):
     return render(request, 'envios/dashboard.html', context)
 
 
-# ─────────────────────────────────────────────
-# 📋 LISTADO DE ENCOMIENDAS
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ðŸ“‹ LISTADO DE ENCOMIENDAS
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @login_required
 def encomienda_lista(request):
     """
     Muestra la lista de encomiendas con:
-    - Búsqueda
+    - BÃºsqueda
     - Filtro por estado
-    - Paginación de 15 registros por página
+    - PaginaciÃ³n de 15 registros por pÃ¡gina
     """
 
     q = request.GET.get('q', '')
@@ -94,14 +96,14 @@ def encomienda_lista(request):
     return render(request, 'envios/lista.html', context)
 
 
-# ─────────────────────────────────────────────
-# 🔍 DETALLE DE ENCOMIENDA
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ðŸ” DETALLE DE ENCOMIENDA
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @login_required
 def encomienda_detalle(request, pk):
     """
-    Muestra el detalle de una encomienda específica.
-    Incluye información completa e historial de cambios de estado.
+    Muestra el detalle de una encomienda especÃ­fica.
+    Incluye informaciÃ³n completa e historial de cambios de estado.
     """
 
     encomienda = get_object_or_404(Encomienda, pk=pk)
@@ -119,14 +121,14 @@ def encomienda_detalle(request, pk):
     })
 
 
-# ─────────────────────────────────────────────
-# ➕ CREAR ENCOMIENDA
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# âž• CREAR ENCOMIENDA
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @login_required
 def encomienda_crear(request):
     """
     Crea una nueva encomienda.
-    GET: muestra el formulario vacío.
+    GET: muestra el formulario vacÃ­o.
     POST: valida y guarda en la base de datos.
     """
 
@@ -154,9 +156,9 @@ def encomienda_crear(request):
     })
 
 
-# ─────────────────────────────────────────────
-# 🔄 CAMBIAR ESTADO
-# ─────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ðŸ”„ CAMBIAR ESTADO
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @login_required
 @require_POST
 def encomienda_cambiar_estado(request, pk):
@@ -173,7 +175,7 @@ def encomienda_cambiar_estado(request, pk):
         messages.error(request, 'Debes seleccionar un estado.')
         return redirect('encomienda_detalle', pk=pk)
 
-    # 👤 Buscar el empleado asociado al usuario logueado
+    # ðŸ‘¤ Buscar el empleado asociado al usuario logueado
     empleado = Empleado.objects.filter(user=request.user).first()
 
     if not empleado:
@@ -196,3 +198,64 @@ def encomienda_cambiar_estado(request, pk):
         messages.error(request, str(e))
 
     return redirect('encomienda_detalle', pk=pk)
+
+
+def health_check(request):
+    """
+    Verifica PostgreSQL, Redis y el channel layer.
+    GET /health/
+    """
+    estado = {
+        'postgres': False,
+        'redis': False,
+        'channels': False,
+    }
+
+    try:
+        from django.db import connection
+        connection.ensure_connection()
+        estado['postgres'] = True
+    except Exception as error:
+        estado['postgres_error'] = str(error)
+
+    try:
+        import redis
+        redis_url = getattr(settings, 'REDIS_URL', 'redis://redis:6379/1')
+        client = redis.from_url(
+            redis_url,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
+        client.ping()
+        info = client.info()
+        estado['redis'] = True
+        estado['redis_memoria'] = info.get('used_memory_human')
+        estado['redis_clientes'] = info.get('connected_clients')
+        estado['redis_version'] = info.get('redis_version')
+    except Exception as error:
+        estado['redis_error'] = str(error)
+
+    try:
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'health_check',
+            {'type': 'health.ping'}
+        )
+        estado['channels'] = True
+    except Exception as error:
+        estado['channels_error'] = str(error)
+
+    try:
+        redis_url = getattr(settings, 'REDIS_URL', 'redis://redis:6379/1')
+        client = redis.from_url(redis_url)
+        estado['empleados_conectados'] = client.scard(
+            'encomiendas:group:encomiendas_global'
+        )
+    except Exception:
+        estado['empleados_conectados'] = None
+
+    todo_ok = estado['postgres'] and estado['redis'] and estado['channels']
+    return JsonResponse(estado, status=200 if todo_ok else 503)
+

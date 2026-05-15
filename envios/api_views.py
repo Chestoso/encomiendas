@@ -1,77 +1,57 @@
 # envios/api_views.py
-# ─────────────────────────────────────────────────────────────
-# 👁️ VISTAS DE SOLO LECTURA — Clientes y Rutas
-#
-# Estas vistas exponen listados públicos (para usuarios
-# autenticados) usados principalmente al registrar una
-# encomienda nueva: el frontend necesita listar clientes
-# activos y rutas disponibles para los selectores.
-#
-# Patrón usado: generics.ListAPIView
-#   → solo permite GET, nunca POST/PUT/DELETE
-#   → DRF se encarga del serializado, paginación y permisos
-# ─────────────────────────────────────────────────────────────
-
-from rest_framework import generics
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 from clientes.models import Cliente
 from rutas.models import Ruta
 from envios.serializers import ClienteSerializer, RutaSerializer
-
-# Importación defensiva: si api/pagination.py aún no existe
-# (entorno de pruebas o setup inicial), la paginación se
-# deshabilita silenciosamente en lugar de romper el servidor.
-try:
-    from api.pagination import ClientePagination
-except Exception:
-    ClientePagination = None
+from api.pagination import EncomiendaPagination
 
 
-# ─────────────────────────────────────────────────────────────
-# 👤 LISTADO DE CLIENTES ACTIVOS
-# GET /api/v1/clientes/
-#
-# Devuelve solo clientes con estado=1 (activos).
-# Requiere token JWT válido: Authorization: Bearer <token>
-# Paginado con ClientePagination: 20 por página, máx 50.
-# ─────────────────────────────────────────────────────────────
-class ClienteListView(generics.ListAPIView):
+class ClienteListView(ListAPIView):
+    """
+    GET /api/v1/clientes/
+    Lista clientes activos. Usado para poblar selectores
+    al registrar encomiendas en el frontend.
+
+    Filtros:
+        ?search=juan         → busca en nombres, apellidos, nro_doc
+        ?ordering=apellidos  → ordena el resultado
+    """
     serializer_class = ClienteSerializer
-
-    # Solo usuarios autenticados pueden consultar clientes
     permission_classes = [IsAuthenticated]
-
-    # Usa ClientePagination (page_size=20) si está disponible.
-    # None desactiva la paginación como fallback de seguridad.
-    pagination_class = ClientePagination
+    pagination_class = EncomiendaPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['nombres', 'apellidos', 'nro_doc', 'email']
+    ordering_fields = ['apellidos', 'nombres', 'fecha_registro']
+    ordering = ['apellidos']
 
     def get_queryset(self):
-        # Custom manager: filtra Cliente.objects donde estado=1.
-        # Definido en clientes/models.py como ClienteManager.activos()
-        return Cliente.objects.activos()
+        # Solo clientes activos (estado=1)
+        return Cliente.objects.filter(estado=1)
 
 
-# ─────────────────────────────────────────────────────────────
-# 🗺️ LISTADO DE RUTAS ACTIVAS
-# GET /api/v1/rutas/
-#
-# Devuelve solo rutas con estado=1 (activas).
-# Sin paginación: el catálogo de rutas es pequeño y estable,
-# conviene devolverlo completo para poblar un <select>.
-# Requiere token JWT válido: Authorization: Bearer <token>
-# ─────────────────────────────────────────────────────────────
-class RutaListView(generics.ListAPIView):
+class RutaListView(ListAPIView):
+    """
+    GET /api/v1/rutas/
+    Lista rutas activas. Sin paginación porque el catálogo
+    de rutas es pequeño y el frontend lo necesita completo.
+
+    Filtros:
+        ?search=lima         → busca en origen, destino, codigo
+        ?ordering=origen     → ordena el resultado
+    """
     serializer_class = RutaSerializer
-
-    # Solo usuarios autenticados pueden consultar rutas
     permission_classes = [IsAuthenticated]
-
-    # Sin paginación intencional: el número de rutas es reducido
-    # y el cliente necesita todas para construir el selector.
+    # Sin paginación: catálogo pequeño, el frontend lo carga completo
     pagination_class = None
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['origen', 'destino', 'codigo']
+    ordering_fields = ['origen', 'destino', 'precio_base']
+    ordering = ['origen']
 
     def get_queryset(self):
-        # Custom manager: filtra Ruta.objects donde estado=1.
-        # Definido en rutas/models.py como RutaManager.activas()
-        return Ruta.objects.activas()
+        # Solo rutas activas (estado=1)
+        return Ruta.objects.filter(estado=1)

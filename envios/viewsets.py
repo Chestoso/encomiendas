@@ -19,11 +19,13 @@ from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.cache import cache
+from asgiref.sync import async_to_sync
 
 from api.permissions import EsEmpleadoActivo, EsPropietarioOAdmin
 from api.throttles import EmpleadoRateThrottle
 from config.choices import EstadoEnvio
 from envios.models import Encomienda, Empleado
+from envios.async_services import enviar_evento_actividad, enviar_progreso_bulk
 from envios.serializers import (
     EncomiendaSerializer,
     EncomiendaDetailSerializer,
@@ -343,6 +345,8 @@ class EncomiendaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        total = len(request.data)
+
         # Resuelve el empleado antes de validar para fallar rápido
         try:
             empleado = self.obtener_empleado_actual()
@@ -366,7 +370,20 @@ class EncomiendaViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         # Inyecta el mismo empleado_registro para todo el lote
+        async_to_sync(enviar_progreso_bulk)(total, 0, estado='procesando')
         serializer.save(empleado_registro=empleado)
+        async_to_sync(enviar_progreso_bulk)(
+            total,
+            len(serializer.data),
+            estado='finalizado'
+        )
+        async_to_sync(enviar_evento_actividad)(
+            'bulk_finalizado',
+            {
+                'total_creadas': len(serializer.data),
+                'empleado': str(empleado),
+            }
+        )
 
         return Response(
             {

@@ -32,6 +32,13 @@ from envios.viewsets import EncomiendaViewSet
 # Vistas de solo lectura para poblar selectores en el frontend
 from envios.api_views import ClienteListView, RutaListView
 
+# Vistas async  ← movido aquí arriba, fuera de urlpatterns
+from envios.views_async import (
+    DashboardStatsAsyncView,
+    VerificarLoteView,
+    CambiarEstadoAsyncView,
+)
+
 
 # ─────────────────────────────────────────────────────────────
 # 📋 ROUTER PRINCIPAL
@@ -120,4 +127,11 @@ urlpatterns = [
     # ViewSets registrados arriba en su conjunto de rutas CRUD.
     # ─────────────────────────────────────────────────────────
     path('', include(router.urls)),
+
+    # ─────────────────────────────────────────────────────────
+    # ⚡ VISTAS ASYNC
+    # ─────────────────────────────────────────────────────────
+    path('async/dashboard-stats/', DashboardStatsAsyncView.as_view(), name='async_dashboard'),
+    path('async/verificar-lote/',  VerificarLoteView.as_view(),       name='async_lote'),
+    path('async/cambiar-estado/<int:encomienda_id>/', CambiarEstadoAsyncView.as_view(), name='async_estado'),
 ]

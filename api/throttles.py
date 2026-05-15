@@ -1,36 +1,34 @@
 # api/throttles.py
-# ─────────────────────────────────────────────────────────────
-# ⏱️ THROTTLES PERSONALIZADOS (LIMITACIÓN DE TASA)
-# Extienden las clases base de DRF vinculándose a los `scope`
-# definidos en DEFAULT_THROTTLE_RATES del settings.py.
-#
-# Tasas configuradas en settings.py:
-#   'empleado': '100/min'   → EmpleadoRateThrottle
-#   'login':    '5/min'     → LoginRateThrottle
-# ─────────────────────────────────────────────────────────────
-
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 
 
-# ─────────────────────────────────────────────────────────────
-# 👷 THROTTLE PARA EMPLEADOS AUTENTICADOS
-# Hereda de UserRateThrottle: usa el user_id como clave de caché.
-# Se aplica en vistas donde los empleados realizan operaciones
-# frecuentes (consultas, actualizaciones de estado, etc.).
-# Límite: 100 requests/min por usuario (ver settings.py)
-# ─────────────────────────────────────────────────────────────
 class EmpleadoRateThrottle(UserRateThrottle):
-    # scope debe coincidir exactamente con la clave en DEFAULT_THROTTLE_RATES
+    """
+    100 req/min para empleados autenticados.
+    Scope debe coincidir con DEFAULT_THROTTLE_RATES en settings.py.
+    """
     scope = 'empleado'
 
 
-# ─────────────────────────────────────────────────────────────
-# 🚪 THROTTLE PARA EL ENDPOINT DE LOGIN (ANÓNIMO)
-# Hereda de AnonRateThrottle: usa la IP del cliente como clave.
-# Protege el endpoint de autenticación contra ataques de
-# fuerza bruta o credential stuffing.
-# Límite: 5 requests/min por IP (ver settings.py)
-# ─────────────────────────────────────────────────────────────
 class LoginRateThrottle(AnonRateThrottle):
-    # scope debe coincidir exactamente con la clave en DEFAULT_THROTTLE_RATES
+    """
+    5 req/min por IP para el endpoint de login.
+    Protege contra fuerza bruta en /api/v1/auth/token/
+    """
     scope = 'login'
+
+
+class BurstRateThrottle(AnonRateThrottle):
+    """
+    Throttle de ráfaga para usuarios anónimos.
+    20 req/min — valor definido en settings DEFAULT_THROTTLE_RATES['anon']
+    """
+    scope = 'anon'
+
+
+class SustainedRateThrottle(UserRateThrottle):
+    """
+    Throttle sostenido para usuarios autenticados.
+    200 req/min — valor definido en settings DEFAULT_THROTTLE_RATES['user']
+    """
+    scope = 'user'

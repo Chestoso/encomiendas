@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test - Encomiendas</title>
+    <style>
+        body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+        h1, .panel h3 { color: #00d4ff; }
+        .panel { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .log { background: #0d0d1a; padding: 10px; border-radius: 4px; height: 120px; overflow-y: auto; font-size: 12px; }
+        .log p { margin: 2px 0; }
+        .ok { color: #00ff88; }
+        .err { color: #ff4444; }
+        .msg { color: #ffcc00; }
+        button { background: #0f3460; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-right: 6px; }
+        button:hover { background: #00d4ff; color: #000; }
+        .status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #444; margin-right: 6px; }
+        .status.connected { background: #00ff88; }
+    </style>
+</head>
+<body>
+<h1>WebSocket Test - Sistema de Encomiendas</h1>
+
+<div class="panel">
+    <h3><span class="status" id="s1"></span>ws/encomiendas/</h3>
+    <button onclick="conectar('encomiendas', 'ws1', 's1', 'log1')">Conectar</button>
+    <button onclick="desconectar('ws1')">Desconectar</button>
+    <button onclick="enviar('ws1', 'log1', {tipo: 'ping'})">Ping</button>
+    <div class="log" id="log1"></div>
+</div>
+
+<div class="panel">
+    <h3><span class="status" id="s2"></span>ws/dashboard/</h3>
+    <button onclick="conectar('dashboard', 'ws2', 's2', 'log2')">Conectar</button>
+    <button onclick="desconectar('ws2')">Desconectar</button>
+    <button onclick="enviar('ws2', 'log2', {tipo: 'solicitar_stats'})">Pedir Stats</button>
+    <div class="log" id="log2"></div>
+</div>
+
+<div class="panel">
+    <h3><span class="status" id="s3"></span>ws/actividad/</h3>
+    <button onclick="conectar('actividad', 'ws3', 's3', 'log3')">Conectar</button>
+    <button onclick="desconectar('ws3')">Desconectar</button>
+    <div class="log" id="log3"></div>
+</div>
+
+<div class="panel">
+    <h3><span class="status" id="s4"></span>ws/bulk/</h3>
+    <button onclick="conectar('bulk', 'ws4', 's4', 'log4')">Conectar</button>
+    <button onclick="desconectar('ws4')">Desconectar</button>
+    <div class="log" id="log4"></div>
+</div>
+
+<script>
+    const sockets = { ws1: null, ws2: null, ws3: null, ws4: null };
+    const statuses = { ws1: 's1', ws2: 's2', ws3: 's3', ws4: 's4' };
+    const host = window.location.host;
+
+    function log(logId, msg, tipo = 'msg') {
+        const div = document.getElementById(logId);
+        const p = document.createElement('p');
+        p.className = tipo;
+        p.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        div.appendChild(p);
+        div.scrollTop = div.scrollHeight;
+    }
+
+    function conectar(canal, wsKey, statusId, logId) {
+        if (sockets[wsKey]) sockets[wsKey].close();
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(`${protocol}://${host}/ws/${canal}/`);
+        sockets[wsKey] = ws;
+
+        ws.onopen = () => {
+            document.getElementById(statusId).classList.add('connected');
+            log(logId, `Conectado a ws/${canal}/`, 'ok');
+        };
+        ws.onmessage = (e) => log(logId, e.data, 'msg');
+        ws.onerror = () => log(logId, 'Error de conexion', 'err');
+        ws.onclose = () => {
+            document.getElementById(statusId).classList.remove('connected');
+            log(logId, 'Desconectado', 'err');
+        };
+    }
+
+    function desconectar(wsKey) {
+        if (sockets[wsKey]) {
+            sockets[wsKey].close();
+            sockets[wsKey] = null;
+        }
+        document.getElementById(statuses[wsKey]).classList.remove('connected');
+    }
+
+    function enviar(wsKey, logId, payload) {
+        if (sockets[wsKey] && sockets[wsKey].readyState === WebSocket.OPEN) {
+            sockets[wsKey].send(JSON.stringify(payload));
+            log(logId, `Enviado: ${JSON.stringify(payload)}`, 'ok');
+        } else {
+            log(logId, 'No conectado', 'err');
+        }
+    }
+</script>
+</body>
+</html>
