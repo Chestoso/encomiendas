@@ -44,10 +44,27 @@ class EncomiendaForm(forms.ModelForm):
                 'min': '0.1',
                 'required': True
             }),
+            'volumen_cm3': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0'
+            }),
+            'empleado_registro': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
             'costo_envio': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0'
+            }),
+            'fecha_entrega_est': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'fecha_entrega_real': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
             }),
             'descripcion': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -73,6 +90,12 @@ class EncomiendaForm(forms.ModelForm):
 
         if 'ruta' in self.fields:
             self.fields['ruta'].queryset = Ruta.objects.filter(estado=1)
+
+        for field in self.fields.values():
+            css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
+            current_class = field.widget.attrs.get('class', '')
+            if css_class not in current_class:
+                field.widget.attrs['class'] = f'{current_class} {css_class}'.strip()
 
     def clean_peso_kg(self):
         """

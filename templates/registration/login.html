@@ -1,37 +1,79 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ titulo }}{% endblock %}
+{% block title %}Iniciar sesion{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header bg-white">
-        <h4 class="mb-0">{{ titulo }}</h4>
-    </div>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <div class="auth-icon">
+                <i class="fa-solid fa-truck-fast"></i>
+            </div>
+            <div>
+                <h1>Encomiendas</h1>
+                <p>Acceso al sistema de gestion</p>
+            </div>
+        </div>
 
-    <div class="card-body">
+        {% if form.errors %}
+            <div class="alert alert-danger mb-3">
+                Usuario o contrasena incorrectos.
+            </div>
+        {% endif %}
+
+        {% if next %}
+            <div class="alert alert-info mb-3">
+                Inicia sesion para continuar.
+            </div>
+        {% endif %}
+
         <form method="post" novalidate>
             {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
 
-            {% for field in form %}
-                <div class="mb-3">
-                    <label class="form-label">{{ field.label }}</label>
-                    {{ field }}
-
-                    {% if field.errors %}
-                        <div class="text-danger small">
-                            {{ field.errors }}
-                        </div>
-                    {% endif %}
+            <div class="mb-3">
+                <label class="form-label" for="{{ form.username.id_for_label }}">
+                    Usuario
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <input
+                        type="text"
+                        name="{{ form.username.html_name }}"
+                        id="{{ form.username.id_for_label }}"
+                        class="form-control"
+                        autocomplete="username"
+                        autofocus
+                        required
+                    >
                 </div>
-            {% endfor %}
+            </div>
 
-            <button type="submit" class="btn btn-primary">
-                Guardar
+            <div class="mb-4">
+                <label class="form-label" for="{{ form.password.id_for_label }}">
+                    Contrasena
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    <input
+                        type="password"
+                        name="{{ form.password.html_name }}"
+                        id="{{ form.password.id_for_label }}"
+                        class="form-control"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 auth-submit">
+                <i class="fa-solid fa-right-to-bracket me-2"></i>
+                Ingresar
             </button>
-
-            <a href="{% url 'encomienda_lista' %}" class="btn btn-secondary">
-                Cancelar
-            </a>
         </form>
     </div>
 </div>
